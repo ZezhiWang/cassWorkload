@@ -7,18 +7,20 @@ import(
 	"time"
 	"log"
 	"sync"
+//	"math/rand"
 	// go get github.com/gocql/gocql
 	"github.com/gocql/gocql"
 )
 
 // initialize mutex lock
-var mutex = &sync.Mutex()
+var mutex = &sync.Mutex{}
 
 // write info into table before read, with out tracking time
 func initWrite(num int, session *gocql.Session){
 	// write data in the form (int, string) into table tmp
-	arg := fmt.Sprintf("INSERT INTO tmp (id,info) values (%d, 'test')",num)
-	if err := session.Query(arg).Exec(); err != nil {
+	val := make([]byte, 4)
+	arg := fmt.Sprintf("INSERT INTO tmp (id,val) values (?, ?)")
+	if err := session.Query(arg, num,val).Exec(); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -26,10 +28,11 @@ func initWrite(num int, session *gocql.Session){
 // write info into table
 func write(num int, session *gocql.Session, wTime chan time.Duration){
 	// write data in the form (int, string) into table tmp
-	arg := fmt.Sprintf("INSERT INTO tmp (id,info) values (%d, 'test')",num)
+	arg := fmt.Sprintf("INSERT INTO tmp (id,val) values (?, ?)")
+	val := make([]byte, 4)
 	mutex.Lock()
 	start := time.Now()
-	if err := session.Query(arg).Exec(); err != nil {
+	if err := session.Query(arg,num,val).Exec(); err != nil {
 		log.Fatal(err)
 	}
 	end := time.Now()
@@ -68,7 +71,7 @@ func main(){
 	// command line arg -> number of read & write
 	num,_ := strconv.Atoi(os.Args[1])
 	// init cluster
-	cluster := gocql.NewCluster("172.17.0.2")
+	cluster := gocql.NewCluster("172.17.0.4")
 	// set keyspace to demo
 	cluster.Keyspace = "demo"
 	session,_ := cluster.CreateSession()
