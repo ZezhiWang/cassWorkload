@@ -17,10 +17,9 @@ var mutex = &sync.Mutex{}
 
 // write info into table before read, with out tracking time
 func initWrite(num int, session *gocql.Session){
-	// write data in the form (int, string) into table tmp
-	val := make([]byte, 4)
-	arg := fmt.Sprintf("INSERT INTO tmp (id,val) values (?, ?)")
-	if err := session.Query(arg, num,val).Exec(); err != nil {
+	// write data in the form (string,blob) into table tmp
+	arg := fmt.Sprintf("INSERT INTO tmp (key,val) values (?, ?)")
+	if err := session.Query(arg, string(num),make([]byte, 4)).Exec(); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -28,11 +27,10 @@ func initWrite(num int, session *gocql.Session){
 // write info into table
 func write(num int, session *gocql.Session, wTime chan time.Duration){
 	// write data in the form (int, string) into table tmp
-	arg := fmt.Sprintf("INSERT INTO tmp (id,val) values (?, ?)")
-	val := make([]byte, 4)
+	arg := fmt.Sprintf("INSERT INTO tmp (key,val) values (?, ?)")
 	mutex.Lock()
 	start := time.Now()
-	if err := session.Query(arg,num,val).Exec(); err != nil {
+	if err := session.Query(arg,string(num),make([]byte, 4)).Exec(); err != nil {
 		log.Fatal(err)
 	}
 	end := time.Now()
@@ -42,14 +40,15 @@ func write(num int, session *gocql.Session, wTime chan time.Duration){
 	wTime <- elapsed
 }
 
-// read info from table by id
+// read info from table by key
 func read(num int, session *gocql.Session, rTime chan time.Duration){
-	var id int
-	// write data in the form table tmp with id = num
-	arg := fmt.Sprintf("SELECT id FROM tmp WHERE id=%d",num)
+	var key string
+	var val []byte
+	// write data in the form table tmp with key = num
+	arg := fmt.Sprintf("SELECT key,val FROM tmp WHERE key='%s'",string(num))
 	mutex.Lock()
 	start := time.Now()
-	if err := session.Query(arg).Scan(&id); err != nil {
+	if err := session.Query(arg).Scan(&key,&val); err != nil {
 		log.Fatal(err)
 	}
 	end := time.Now()
@@ -61,7 +60,7 @@ func read(num int, session *gocql.Session, rTime chan time.Duration){
 
 // delete value by key from table
 func delete(num int, session *gocql.Session){
-	arg := fmt.Sprintf("DELETE FROM tmp WHERE id=%d",num)
+	arg := fmt.Sprintf("DELETE FROM tmp WHERE key='%s'",string(num))
 	if err := session.Query(arg).Exec(); err != nil {
 		log.Fatal(err)
 	}
