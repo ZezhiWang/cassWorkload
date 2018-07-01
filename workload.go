@@ -116,5 +116,5 @@ func main(){
 
 	fmt.Printf("Avg write time: %f ms\n", float64(WTotal)/float64(num))
 	fmt.Printf("Avg read time: %f ms\n", float64(RTotal)/float64(num))
-	fmt.Printf("Total time: %d s\n", total/1000)
+	fmt.Printf("Total time: %d ms\n", total)
 }
