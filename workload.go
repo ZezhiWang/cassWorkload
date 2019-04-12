@@ -22,7 +22,7 @@ var mutex = &sync.Mutex{}
 // write info into table before read, with out tracking time
 func initWrite(num int,dataSize int){
 	// write data in the form (string,blob) into table tmp
-	arg := fmt.Sprintf("INSERT INTO tmp (key,val) values (?, ?)")
+	arg := fmt.Sprintf("INSERT INTO usertable (y_id,field0) values (?, ?)")
 	if err := session.Query(arg, string(num),make([]byte, dataSize)).Exec(); err != nil {
 //		log.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func initWrite(num int,dataSize int){
 // write info into table
 func write(numKey int,dataSize int,wTime chan time.Duration){
 	// write data in the form (int, string) into table tmp
-	arg := fmt.Sprintf("INSERT INTO tmp (key,val) values (?, ?)")
+	arg := fmt.Sprintf("UPDATE usertable SET field0=? WHERE y_id=?")
 	key:= rand.Int() % numKey
 	mutex.Lock()
 	start := time.Now()
@@ -48,10 +48,10 @@ func write(numKey int,dataSize int,wTime chan time.Duration){
 // read info from table by key
 func read(numKey int, rTime chan time.Duration){
 	var key string
-	var val []byte
+	var val string
 	cassKey:= rand.Int() % numKey;
 	// write data in the form table tmp with key = num
-	arg := fmt.Sprintf("SELECT key,val FROM tmp WHERE key=?")
+	arg := fmt.Sprintf("SELECT y_id,field0 FROM usertable WHERE y_id=?")
 	mutex.Lock()
 	start := time.Now()
 	if err := session.Query(arg,string(cassKey)).Scan(&key,&val); err != nil {
@@ -66,7 +66,7 @@ func read(numKey int, rTime chan time.Duration){
 
 // delete value by key from table
 func delete(num int){
-	arg := fmt.Sprintf("DELETE FROM tmp WHERE key=?")
+	arg := fmt.Sprintf("DELETE FROM usertable WHERE y_id=?")
 	if err := session.Query(arg,string(num)).Exec(); err != nil {
 		//log.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 			go write(numKey,dataSize,wTime)
 			numWrites++
 		} else{
-			go read(numKey,wTime)
+			go read(numKey,rTime)
 			numReads++
 		}
 	}
@@ -116,7 +116,7 @@ func main(){
 	// init cluster
 	cluster := gocql.NewCluster("128.52.162.124","128.52.162.125","128.52.162.131","128.52.162.127","128.52.162.122","128.52.162.120")
 	// set keyspace to demo
-	cluster.Keyspace = "demo"
+	cluster.Keyspace = "ycsb"
 	var err error;
 	session, err = cluster.CreateSession()
 	if err != nil {
