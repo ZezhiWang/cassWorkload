@@ -72,7 +72,7 @@ func delete(num int){
 	}
 }
 
-func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]float64) {
+func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]float64,float64) {
 	wTime := make(chan time.Duration)
 	rTime := make(chan time.Duration)
 	numWrites,numReads := 0,0
@@ -93,6 +93,7 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 			numReads++
 		}
 	}
+	startTime := time.Now();
 	// retrieve elapsed time
 	for i := 0; i <numWrites; i++{
 		writeDurations = append(writeDurations,float64(<-wTime/time.Millisecond))
@@ -100,11 +101,14 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 	for i := 0; i <numReads; i++{
 		readDurations = append(readDurations,float64(<-rTime/time.Millisecond))
 	}
+	endTime := time.Now()
+	elapsedTime := endTime.Sub(startTime)
+	totalTime := float64(elapsedTime/time.Millisecond);
 	// clear table
 	for i := 0; i < numKey; i++{
 		delete(i)
 	}
-	return writeDurations,readDurations;
+	return writeDurations,readDurations,totalTime;
 }
 
 func FloatToString(input_num float64) string {
@@ -114,7 +118,7 @@ func FloatToString(input_num float64) string {
 
 func main(){
 	// init cluster
-	cluster := gocql.NewCluster("128.52.162.124","128.52.162.125","128.52.162.131","128.52.162.127","128.52.162.122","128.52.162.120")
+	cluster := gocql.NewCluster("10.142.0.2")
 	// set keyspace to demo
 	cluster.Keyspace = "ycsb"
 	var err error;
@@ -136,19 +140,19 @@ func main(){
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 	var records [][]string;
-	colNames := []string{"write_read_fraction","num_key","data_size","write_average","read_average","ninety_five_write","ninety_five_read"}
+	colNames := []string{"write_read_fraction","num_key","data_size","write_average","read_average","ninety_five_write","ninety_five_read","total_time"}
 	records = append(records,colNames)
 	for _, writeReadFraction := range writeReadFractions {
 		for _, numKey := range numKeys {
 			for _, dataSize := range dataSizes {
-				writeDurations,readDurations :=runRound(writeReadFraction,numKey,dataSize)
+				writeDurations,readDurations,totalTime :=runRound(writeReadFraction,numKey,dataSize)
 				writeAverage,_:=stats.Mean(writeDurations)
 				readAverage,_:=stats.Mean(readDurations)
 				fmt.Printf("Avg write time: %f ms\n",writeAverage)
 				fmt.Printf("Avg read time: %f ms\n", readAverage)
 				ninetyPercentileWrite,_:=stats.Percentile(writeDurations,.95)
 				ninetyPercentileRead,_ :=stats.Percentile(readDurations,.95)
-				vals := [7]float64{writeReadFraction,float64(numKey),float64(dataSize),writeAverage,readAverage,ninetyPercentileWrite,ninetyPercentileRead}
+				vals := [8]float64{writeReadFraction,float64(numKey),float64(dataSize),writeAverage,readAverage,ninetyPercentileWrite,ninetyPercentileRead,totalTime}
 				var record []string;
 				for _,val:= range vals{
 					record = append(record, FloatToString(val))
