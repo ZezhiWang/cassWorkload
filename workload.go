@@ -11,38 +11,37 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 var numOperations float64= 10000;
 var  session *gocql.Session;
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-const (
-	letterIdxBits = 6                    // 6 bits to represent a letter index
-	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
-	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
-)
-var src = rand.NewSource(time.Now().UnixNano())
+//const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+//const (
+//	letterIdxBits = 6                    // 6 bits to represent a letter index
+//	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+//	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+//)
+//var src = rand.NewSource(time.Now().UnixNano())
 // initialize mutex lock
 var mutex = &sync.Mutex{}
 
-func randString(n int) string {
-	b := make([]byte, n)
-	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
-	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
-		if remain == 0 {
-			cache, remain = src.Int63(), letterIdxMax
-		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
-			i--
-		}
-		cache >>= letterIdxBits
-		remain--
-	}
-
-	return *(*string)(unsafe.Pointer(&b))
-}
+//func randString(n int) string {
+//	b := make([]byte, n)
+//	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
+//	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
+//		if remain == 0 {
+//			cache, remain = src.Int63(), letterIdxMax
+//		}
+//		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+//			b[i] = letterBytes[idx]
+//			i--
+//		}
+//		cache >>= letterIdxBits
+//		remain--
+//	}
+//
+//	return *(*string)(unsafe.Pointer(&b))
+//}
 
 // write info into table before read, with out tracking time
 func initWrite(num int,dataSize int){
@@ -60,7 +59,7 @@ func write(numKey int,dataSize int,wTime chan time.Duration){
 	key:= rand.Int() % numKey
 	mutex.Lock()
 	start := time.Now()
-	if err := session.Query(arg,randString(dataSize),string(key)).Exec(); err != nil {
+	if err := session.Query(arg,make([]byte, dataSize),string(key)).Exec(); err != nil {
 		//log.Fatal(err)
 	}
 	end := time.Now()
@@ -90,10 +89,10 @@ func read(numKey int, rTime chan time.Duration){
 }
 
 // delete value by key from table
-func delete(num int){
-	arg := fmt.Sprintf("DELETE FROM usertable WHERE y_id=?")
-	if err := session.Query(arg,string(num)).Exec(); err != nil {
-		//log.Fatal(err)
+func truncate(){
+	arg := fmt.Sprintf("TRUNCATE TABLE usertable")
+	if err := session.Query(arg).Exec(); err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -130,9 +129,7 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 	elapsedTime := endTime.Sub(startTime)
 	totalTime := float64(elapsedTime/time.Millisecond);
 	// clear table
-	for i := 0; i < numKey; i++{
-		delete(i)
-	}
+	truncate()
 	return writeDurations,readDurations,totalTime;
 }
 
