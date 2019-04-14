@@ -153,6 +153,7 @@ func main(){
 		fmt.Println(err)
 		fmt.Println(session)
 	}
+	//
 	defer session.Close()
 	writeReadFractions := [5]float64{.1,.3,.5,.7,.9}
 	numKeys := [6]int{1,2,4,8,16,32}
