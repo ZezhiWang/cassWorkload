@@ -60,7 +60,7 @@ func write(numKey int,dataSize int,wTime chan time.Duration){
 	key:= rand.Int() % numKey
 	mutex.Lock()
 	start := time.Now()
-	if err := session.Query(arg,string(key),randString(dataSize)).Exec(); err != nil {
+	if err := session.Query(arg,randString(dataSize),string(key)).Exec(); err != nil {
 		//log.Fatal(err)
 	}
 	end := time.Now()
