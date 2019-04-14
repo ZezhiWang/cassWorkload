@@ -1,23 +1,48 @@
-package main 
+package main
 
-import(
+import (
 	"encoding/csv"
 	"fmt"
+	"github.com/gocql/gocql"
 	"github.com/montanaflynn/stats"
 	"log"
 	"math/rand"
 	"os"
 	"strconv"
-	"time"
 	"sync"
-	"github.com/gocql/gocql"
+	"time"
+	"unsafe"
 )
 
 var numOperations float64= 10000;
 var  session *gocql.Session;
-
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const (
+	letterIdxBits = 6                    // 6 bits to represent a letter index
+	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+)
+var src = rand.NewSource(time.Now().UnixNano())
 // initialize mutex lock
 var mutex = &sync.Mutex{}
+
+func randString(n int) string {
+	b := make([]byte, n)
+	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
+	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+			b[i] = letterBytes[idx]
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
+
+	return *(*string)(unsafe.Pointer(&b))
+}
 
 // write info into table before read, with out tracking time
 func initWrite(num int,dataSize int){
@@ -35,7 +60,7 @@ func write(numKey int,dataSize int,wTime chan time.Duration){
 	key:= rand.Int() % numKey
 	mutex.Lock()
 	start := time.Now()
-	if err := session.Query(arg,string(key),make([]byte, dataSize)).Exec(); err != nil {
+	if err := session.Query(arg,string(key),randString(dataSize)).Exec(); err != nil {
 		//log.Fatal(err)
 	}
 	end := time.Now()
@@ -124,6 +149,7 @@ func main(){
 	var err error;
 	session, err = cluster.CreateSession()
 	if err != nil {
+		// Maybe log this???
 		fmt.Println(err)
 		fmt.Println(session)
 	}
@@ -134,20 +160,23 @@ func main(){
 
 	file, err := os.Create("result.csv")
 	if err != nil {
+		// You log and you print. Please choose one.
 		log.Fatal("Cannot create file", err)
 	}
 	defer file.Close()
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 	var records [][]string;
+	// nit: over 100 chars in line
 	colNames := []string{"write_read_fraction","num_key","data_size","write_average","read_average","ninety_five_write","ninety_five_read","total_time"}
 	records = append(records,colNames)
 	for _, writeReadFraction := range writeReadFractions {
 		for _, numKey := range numKeys {
 			for _, dataSize := range dataSizes {
-				writeDurations,readDurations,totalTime :=runRound(writeReadFraction,numKey,dataSize)
-				writeAverage,_:=stats.Mean(writeDurations)
-				readAverage,_:=stats.Mean(readDurations)
+				writeDurations,readDurations,totalTime := runRound(writeReadFraction,numKey,dataSize)
+				writeAverage,_:= stats.Mean(writeDurations)
+				readAverage,_:= stats.Mean(readDurations)
+				// Inconsist agian
 				fmt.Printf("Avg write time: %f ms\n",writeAverage)
 				fmt.Printf("Avg read time: %f ms\n", readAverage)
 				ninetyPercentileWrite,_:=stats.Percentile(writeDurations,.95)
@@ -162,5 +191,6 @@ func main(){
 			}
 		}
 	}
+	// nit: Unhadled error
 	writer.WriteAll(records);
 }
