@@ -106,7 +106,7 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 	var readDurations []float64
 	// insert value into table before start testing
 	for i := 0; i < numKey; i++{
-		initWrite(numKey,dataSize)
+		initWrite(i,dataSize)
 	}
 	// go routine for concurrent read & write
 	for i := 0; i < int(numOperations); i++{
