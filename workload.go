@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var numOperations float64= 10000;
+var numOperations float64= 100000;
 var  session *gocql.Session;
 //const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 //const (
