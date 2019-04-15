@@ -177,8 +177,8 @@ func main(){
 				// Inconsist agian
 				fmt.Printf("Avg write time: %f ms\n",writeAverage)
 				fmt.Printf("Avg read time: %f ms\n", readAverage)
-				ninetyPercentileWrite,_:=stats.Percentile(writeDurations,.95)
-				ninetyPercentileRead,_ :=stats.Percentile(readDurations,.95)
+				ninetyPercentileWrite,_:=stats.Percentile(writeDurations,.05)
+				ninetyPercentileRead,_ :=stats.Percentile(readDurations,.05)
 				vals := [8]float64{writeReadFraction,float64(numKey),float64(dataSize),writeAverage,readAverage,ninetyPercentileWrite,ninetyPercentileRead,totalTime}
 				var record []string;
 				for _,val:= range vals{
