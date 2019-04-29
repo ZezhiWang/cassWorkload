@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var numOperations float64= 100000;
+var numOperations float64= 50000;
 var  session *gocql.Session;
 //const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 //const (
@@ -140,7 +140,7 @@ func FloatToString(input_num float64) string {
 
 func main(){
 	// init cluster
-	cluster := gocql.NewCluster("10.142.0.2")
+	cluster := gocql.NewCluster("10.142.0.6","10.142.0.11","10.142.0.41")
 	// set keyspace to demo
 	cluster.Keyspace = "ycsb"
 	var err error;
@@ -153,8 +153,8 @@ func main(){
 	//
 	defer session.Close()
 	writeReadFractions := [5]float64{.1,.3,.5,.7,.9}
-	numKeys := [6]int{1,2,4,8,16,32}
-	dataSizes:=[6]int{8,16,32,64,128,256}
+	numKeys := [5]int{2,4,8,16,32}
+	dataSizes:=[8]int{32,64,128,256,512,1024,2048,4096}
 
 	file, err := os.Create("result.csv")
 	if err != nil {
