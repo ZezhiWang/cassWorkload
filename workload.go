@@ -14,7 +14,7 @@ import (
 )
 
 var numOperations float64= 10000
-var numUser int = 10
+var numUser int = 100
 var  session *gocql.Session;
 //const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 //const (
