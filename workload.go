@@ -13,7 +13,8 @@ import (
 	"time"
 )
 
-var numOperations float64= 50000;
+var numOperations float64= 10000
+var numUser int = 10
 var  session *gocql.Session;
 //const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 //const (
@@ -50,6 +51,21 @@ func initWrite(num int,dataSize int){
 	if err := session.Query(arg, string(num),make([]byte, dataSize)).Exec(); err != nil {
 //		log.Fatal(err)
 	}
+}
+func user(writeReadFraction float64,numKey int,dataSize int,wTime chan time.Duration,rTime chan time.Duration,numWritesChan chan int,numReadChan chan  int){
+	numWrites,numReads:=0,0
+	for i := 0; i < int(numOperations); i++{
+		if(rand.Float64()>writeReadFraction){
+			write(numKey,dataSize,wTime)
+			numWrites++
+		} else{
+			read(numKey,rTime)
+			numReads++
+		}
+	}
+	numWritesChan<-numWrites
+	numReadChan<-numReads
+
 }
 
 // write info into table
@@ -100,37 +116,37 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 
 	var writeDurations []float64
 	var readDurations []float64
+	numWrites,numReads :=0,0
+	numWritesChan,numReadsChan := make(chan int),make(chan int)
+
+	wTime := make(chan time.Duration,numOperations)
+	rTime := make(chan time.Duration,numOperations)
 	// insert value into table before start testing
 	for i := 0; i < numKey; i++{
 		initWrite(i,dataSize)
 	}
-	// go routine for concurrent read & write
-	for i := 0; i < int(numOperations); i++{
-		if(rand.Float64()>writeReadFraction){
-			wTime := make(chan time.Duration)
-			go write(numKey,dataSize,wTime)
-			writeDuration :=float64(<-wTime/time.Millisecond);
-			fmt.Printf("Write Duration:  %f ms\n",writeDuration)
-			writeDurations = append(writeDurations,writeDuration)
-		} else{
-			rTime := make(chan time.Duration)
-			go read(numKey,rTime)
-			readDurations = append(readDurations,float64(<-rTime/time.Millisecond))
-		}
+
+	for i:=0; i<numUser; i++{
+		go user(writeReadFraction,numKey,dataSize,wTime,rTime,numWritesChan,numReadsChan)
 	}
+
 	startTime := time.Now();
+	for i:=0;i<numUser;i++{
+		numWrites+=<-numWritesChan
+		numReads+=<-numReadsChan
+	}
+	fmt.Println("Num reads: %f",numReads)
+	fmt.Println("Num writes: %f",numWrites)
 	// retrieve elapsed time
-	//for i := 0; i <numWrites; i++{
-	//	writeDuration :=float64(<-wTime/time.Millisecond);
-	//	fmt.Printf("Write Duration:  %f ms\n",writeDuration)
-	//	writeDurations = append(writeDurations,writeDuration)
-	//}
-	//for i := 0; i <numReads; i++{
-	//	readDurations = append(readDurations,float64(<-rTime/time.Millisecond))
-	//}
+	for i := 0; i <numWrites; i++{
+		writeDurations = append(writeDurations,float64(<-wTime/time.Microsecond));
+	}
+	for i := 0; i <numReads; i++{
+		readDurations = append(readDurations,float64(<-rTime/time.Microsecond))
+	}
 	endTime := time.Now()
 	elapsedTime := endTime.Sub(startTime)
-	totalTime := float64(elapsedTime/time.Millisecond);
+	totalTime := float64(elapsedTime/time.Microsecond);
 	// clear table
 	truncate()
 	return writeDurations,readDurations,totalTime;
