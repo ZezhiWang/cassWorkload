@@ -119,8 +119,8 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 	numWrites,numReads :=0,0
 	numWritesChan,numReadsChan := make(chan int),make(chan int)
 
-	wTime := make(chan time.Duration,numOperations)
-	rTime := make(chan time.Duration,numOperations)
+	wTime := make(chan time.Duration,int(numOperations))
+	rTime := make(chan time.Duration,int(numOperations))
 	// insert value into table before start testing
 	for i := 0; i < numKey; i++{
 		initWrite(i,dataSize)
