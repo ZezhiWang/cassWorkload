@@ -97,9 +97,6 @@ func truncate(){
 }
 
 func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]float64,float64) {
-	wTime := make(chan time.Duration)
-	rTime := make(chan time.Duration)
-	numWrites,numReads := 0,0
 
 	var writeDurations []float64
 	var readDurations []float64
@@ -110,23 +107,27 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 	// go routine for concurrent read & write
 	for i := 0; i < int(numOperations); i++{
 		if(rand.Float64()>writeReadFraction){
+			wTime := make(chan time.Duration)
 			go write(numKey,dataSize,wTime)
-			numWrites++
+			writeDuration :=float64(<-wTime/time.Millisecond);
+			fmt.Printf("Write Duration:  %f ms\n",writeDuration)
+			writeDurations = append(writreadDurations = append(readDurations,float64(<-rTime/time.Millisecond))eDurations,writeDuration)
 		} else{
+			rTime := make(chan time.Duration)
 			go read(numKey,rTime)
-			numReads++
+			readDurations = append(readDurations,float64(<-rTime/time.Millisecond))
 		}
 	}
 	startTime := time.Now();
 	// retrieve elapsed time
-	for i := 0; i <numWrites; i++{
-		writeDuration :=float64(<-wTime/time.Millisecond);
-		fmt.Printf("Write Duration:  %f ms\n",writeDuration)
-		writeDurations = append(writeDurations,writeDuration)
-	}
-	for i := 0; i <numReads; i++{
-		readDurations = append(readDurations,float64(<-rTime/time.Millisecond))
-	}
+	//for i := 0; i <numWrites; i++{
+	//	writeDuration :=float64(<-wTime/time.Millisecond);
+	//	fmt.Printf("Write Duration:  %f ms\n",writeDuration)
+	//	writeDurations = append(writeDurations,writeDuration)
+	//}
+	//for i := 0; i <numReads; i++{
+	//	readDurations = append(readDurations,float64(<-rTime/time.Millisecond))
+	//}
 	endTime := time.Now()
 	elapsedTime := endTime.Sub(startTime)
 	totalTime := float64(elapsedTime/time.Millisecond);
@@ -142,7 +143,7 @@ func FloatToString(input_num float64) string {
 
 func main(){
 	// init cluster
-	cluster := gocql.NewCluster("10.142.0.6","10.142.0.11","10.142.0.41")
+	cluster := gocql.NewCluster("10.142.0.6")
 	// set keyspace to demo
 	cluster.Keyspace = "ycsb"
 	var err error;
