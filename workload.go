@@ -159,7 +159,7 @@ func FloatToString(input_num float64) string {
 
 func main(){
 	// init cluster
-	cluster := gocql.NewCluster("10.142.0.6")
+	cluster := gocql.NewCluster("10.142.0.9","10.142.0.11","10.142.0.12")
 	// set keyspace to demo
 	cluster.Keyspace = "ycsb"
 	var err error;
