@@ -111,7 +111,7 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 			go write(numKey,dataSize,wTime)
 			writeDuration :=float64(<-wTime/time.Millisecond);
 			fmt.Printf("Write Duration:  %f ms\n",writeDuration)
-			writeDurations = append(writreadDurations = append(readDurations,float64(<-rTime/time.Millisecond))eDurations,writeDuration)
+			writeDurations = append(writeDurations,writeDuration)
 		} else{
 			rTime := make(chan time.Duration)
 			go read(numKey,rTime)
