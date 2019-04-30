@@ -52,9 +52,9 @@ func initWrite(num int,dataSize int){
 //		log.Fatal(err)
 	}
 }
-func user(writeReadFraction float64,numKey int,dataSize int,wTime chan time.Duration,rTime chan time.Duration,numWritesChan chan int,numReadChan chan  int){
+func user(writeReadFraction float64,userOperations int,numKey int,dataSize int,wTime chan time.Duration,rTime chan time.Duration,numWritesChan chan int,numReadChan chan  int){
 	numWrites,numReads:=0,0
-	for i := 0; i < int(numOperations); i++{
+	for i := 0; i < int(userOperations); i++{
 		if(rand.Float64()>writeReadFraction){
 			write(numKey,dataSize,wTime)
 			numWrites++
@@ -125,12 +125,14 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 	for i := 0; i < numKey; i++{
 		initWrite(i,dataSize)
 	}
-
+	userOperations:=int(numOperations)/numUser
+	fmt.Println("Initializing users")
 	for i:=0; i<numUser; i++{
-		go user(writeReadFraction,numKey,dataSize,wTime,rTime,numWritesChan,numReadsChan)
+		go user(writeReadFraction,userOperations,numKey,dataSize,wTime,rTime,numWritesChan,numReadsChan)
 	}
 
 	startTime := time.Now();
+	fmt.Println("Starting to record time")
 	for i:=0;i<numUser;i++{
 		numWrites+=<-numWritesChan
 		numReads+=<-numReadsChan
