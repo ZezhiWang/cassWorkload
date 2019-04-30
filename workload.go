@@ -120,7 +120,9 @@ func runRound(writeReadFraction float64,numKey int,dataSize int)([]float64,[]flo
 	startTime := time.Now();
 	// retrieve elapsed time
 	for i := 0; i <numWrites; i++{
-		writeDurations = append(writeDurations,float64(<-wTime/time.Millisecond))
+		writeDuration :=float64(<-wTime/time.Millisecond);
+		fmt.Printf("Write Duration:  %f ms\n",writeDuration)
+		writeDurations = append(writeDurations,writeDuration)
 	}
 	for i := 0; i <numReads; i++{
 		readDurations = append(readDurations,float64(<-rTime/time.Millisecond))
